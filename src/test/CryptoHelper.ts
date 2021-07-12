@@ -7,6 +7,10 @@ const getInstance: () => CryptoHelper = () => {
 
 describe('CryptoHelper', () => {
     describe('randomhash()', () => {
+        it('should return 64 char long strings', () => {
+            const ch = getInstance()
+            expect(ch.randomHash().length).to.equal(64)
+        })
         it('should not return the same when called twice', () => {
             const ch = getInstance()
             const result1 = ch.randomHash()
