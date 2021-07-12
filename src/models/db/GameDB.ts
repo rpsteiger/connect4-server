@@ -1,4 +1,4 @@
-import { GameState, MyGameState } from '../GameState'
+import { GameState, MyGameState, MyGameStateErrors } from '../GameState'
 import { Database, sqlite3 } from 'sqlite3'
 import rootDir from '../../util/util'
 import path from 'path'
@@ -130,9 +130,18 @@ export class MyGameDB implements GameDB {
         })
     }
     static getInstance() {
-        if (!MyGameDB.instance) {
-            MyGameDB.instance = new MyGameDB()
-        }
-        return MyGameDB.instance
+        return new Promise<GameDB>((resolve, reject) => {
+            if (!MyGameDB.instance) {
+                MyGameDB.instance = new MyGameDB()
+                MyGameDB.instance.init().then(success => {
+                    if (!success) {
+                        throw new Error('error while initializing database')
+                    }
+                    resolve(MyGameDB.instance)
+                })
+            } else {
+                resolve(MyGameDB.instance)
+            }
+        })
     }
 }
