@@ -1,10 +1,14 @@
 import { type } from 'os'
+import { Color } from '../models/GameState'
 
 const partial = function (fn: Function, ...partialArgs: any[]) {
     let args = partialArgs
     const f2: (...args: any[]) => any = (...fullArguments: any[]) => fn(...[...partialArgs, ...fullArguments])
     return f2
 }
+
+const ntimes: (fill: Color, n: number) => Color[] = (fill: Color, n: number) =>
+    n === 0 ? [] : [fill, ...ntimes(fill, n - 1)]
 
 const car: (lst: any[]) => any = ([car, _]) => {
     if (typeof car === 'undefined') {
@@ -36,4 +40,4 @@ const myErrors = {
     TAKE_INVALID_N: 'n has to be a positive number',
 }
 
-export { range, rangez, car, cdr, take, myErrors }
+export { range, rangez, car, cdr, take, ntimes, myErrors }

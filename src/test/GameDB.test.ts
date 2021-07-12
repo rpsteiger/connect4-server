@@ -28,6 +28,7 @@ it('true should equal to true', () => {
 
 describe('GameDB', () => {
     describe('init()', () => {
+        // TODO: get this to work
         // it('should create an empty database if no file exists at the target path', done => {
         //     deleteDBFile()
         //         .then(v => {})
