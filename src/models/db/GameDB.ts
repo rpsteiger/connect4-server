@@ -8,6 +8,10 @@ export interface GameDB {
 
 export const DB_FILE_NAME = 'games.sdb'
 
+export const myErrors = {
+    INVALID_GAME_ID: 'gameId has to be 64 characters long and consist only of hex chars',
+}
+
 export class MyGameDB implements GameDB {
     static instance: GameDB
 
