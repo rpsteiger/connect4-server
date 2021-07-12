@@ -1,8 +1,8 @@
 import { expect } from 'chai'
 import { MyGameDB, GameDB, DB_FILE_NAME } from '../models/db/GameDB'
 import { rangez } from '../functionalJS/functionalJS'
-import { myConsts } from '../models/GameState'
-import { MyCryptoHelper } from '../models/CryptoHelper'
+import { GameState, myConsts } from '../models/GameState'
+import { MyGameState } from '../models/GameState'
 import path from 'path'
 import rootDir from '../util/util'
 import fs from 'fs/promises'
@@ -13,16 +13,8 @@ const getClassUnderTest: () => GameDB = () => {
     return MyGameDB.getInstance()
 }
 
-const getEmptyGameState: () => string[][] = () => {
-    const row: string[] = []
-    row.fill('0', 0, myConsts.BOARD_WIDTH)
-    const matrix: string[][] = []
-    matrix.fill([...row], 0, myConsts.BOARD_HEIGHT)
-    return matrix
-}
-
-const getRandomGameId = () => {
-    return new MyCryptoHelper().randomHash()
+const createGameState: () => GameState = () => {
+    return new MyGameState()
 }
 
 const deleteDBFile = () => {
@@ -68,7 +60,7 @@ describe('GameDB', () => {
         it('should not throw with correct params', done => {
             const db = getClassUnderTest()
             db.init().then(() => {
-                const newState = { gameId: getRandomGameId(), gameState: getEmptyGameState() }
+                const newState = createGameState()
                 db.save(newState).then(value => {
                     expect(value).to.be.true
                     done()
@@ -80,11 +72,11 @@ describe('GameDB', () => {
         it('should not throw with correct params', done => {
             const db = getClassUnderTest()
             db.init().then(() => {
-                const newState = { gameId: getRandomGameId(), gameState: getEmptyGameState() }
+                const newState = createGameState()
                 db.save(newState).then(() => {
                     db.load(newState.gameId).then(state => {
                         expect(state!.gameId).to.eql(newState.gameId)
-                        expect(state!.gameState).to.eql(newState.gameState)
+                        expect(state!.board).to.eql(newState.board)
                         done()
                     })
                 })

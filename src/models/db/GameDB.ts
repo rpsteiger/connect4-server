@@ -1,4 +1,4 @@
-import { GameState } from '../GameState'
+import { GameState, MyGameState } from '../GameState'
 import { Database, sqlite3 } from 'sqlite3'
 import rootDir from '../../util/util'
 import path from 'path'
@@ -89,7 +89,7 @@ export class MyGameDB implements GameDB {
         const db = this.database!
         return new Promise<boolean>((resolve, reject) => {
             const sql = 'INSERT INTO game(gameID, gameState) VALUES(?,?)'
-            db.run(sql, [state.gameId, JSON.stringify(state.gameState)], err => {
+            db.run(sql, [state.gameId, state.toJSON()], err => {
                 if (err) reject(err)
                 resolve(true)
             })
@@ -105,7 +105,7 @@ export class MyGameDB implements GameDB {
                     })
                 } else {
                     const sql = 'UPDATE game SET state = ? WHERE gameID = ?'
-                    db.run(sql, [JSON.stringify(newState.gameState), newState.gameId], err => {
+                    db.run(sql, [newState.toJSON(), newState.gameId], err => {
                         if (err) reject(err)
                         resolve(true)
                     })
@@ -121,10 +121,7 @@ export class MyGameDB implements GameDB {
                 if (err) reject(err)
                 if (row) {
                     const typedRow = row as GameDBRow
-                    const gameState: GameState = {
-                        gameId: typedRow.gameID,
-                        gameState: JSON.parse(typedRow.gameState),
-                    }
+                    const gameState = new MyGameState().fromJSON(typedRow.gameState)
                     resolve(gameState)
                 } else {
                     resolve(undefined)
