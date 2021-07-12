@@ -1,9 +1,12 @@
 import { GameState } from '../GameState'
+import { Database, sqlite3 } from 'sqlite3'
+import rootDir from '../../util/util'
+import path from 'path'
 
 export interface GameDB {
     init(): Promise<boolean>
-    save(gameId: string, newState: GameState): Promise<boolean>
-    load(gameId: string): Promise<GameState>
+    save(newState: GameState): Promise<boolean>
+    load(gameId: string): Promise<GameState | undefined>
 }
 
 export const DB_FILE_NAME = 'games.sdb'
@@ -12,23 +15,123 @@ export const myErrors = {
     INVALID_GAME_ID: 'gameId has to be 64 characters long and consist only of hex chars',
 }
 
+type GameDBRow = { gameID: string; gameState: string }
+
 export class MyGameDB implements GameDB {
     static instance: GameDB
+    private database: Database | undefined
 
     private constructor() {}
 
     init(): Promise<boolean> {
         return new Promise<boolean>((resolve, reject) => {
-            resolve(false)
+            const dbFilePath = path.join(rootDir, 'data', DB_FILE_NAME)
+            this.database = new Database(dbFilePath, err => {
+                if (err) {
+                    throw new Error(`Error while creating database: ${err.message}`)
+                    reject(err?.message)
+                }
+                this.gameTableExists().then(tableExists => {
+                    if (!tableExists) {
+                        this.createGameTable().then(tableCreated => {
+                            resolve(tableCreated)
+                        })
+                    } else {
+                        resolve(true)
+                    }
+                })
+            })
         })
     }
-    save(gameId: string, newState: GameState): Promise<boolean> {
-        throw new Error('Method not implemented.')
+    gameTableExists() {
+        return new Promise<boolean>((resolve, reject) => {
+            const sql =
+                "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'game' ORDER BY name;"
+            this.database?.get(sql, (err, row) => {
+                if (err) reject(err)
+                if (row) {
+                    resolve(true)
+                } else {
+                    resolve(false)
+                }
+            })
+        })
     }
-    load(gameId: string): Promise<GameState> {
-        throw new Error('Method not implemented.')
+    createGameTable() {
+        return new Promise<boolean>((resolve, reject) => {
+            this.database?.serialize(() => {
+                this.database?.run('PRAGMA foreign_keys = off;')
+                this.database?.run('BEGIN TRANSACTION;')
+                this.database?.run(
+                    'CREATE TABLE game (gameID  STRING  PRIMARY KEY NOT NULL, gameState VARCHAR NOT NULL);'
+                )
+                this.database?.run('COMMIT TRANSACTION;')
+                this.database?.run('PRAGMA foreign_keys = on;')
+                resolve(true)
+            })
+        })
     }
-
+    stateExists(gameId: string) {
+        const db = this.database!
+        return new Promise<boolean>((resolve, reject) => {
+            const sql = 'SELECT * FROM game WHERE gameID LIKE ?'
+            db.get(sql, [gameId], (err, row) => {
+                if (err) reject(err)
+                if (row) {
+                    resolve(true)
+                } else {
+                    resolve(false)
+                }
+            })
+        })
+    }
+    insertState(state: GameState) {
+        const db = this.database!
+        return new Promise<boolean>((resolve, reject) => {
+            const sql = 'INSERT INTO game(gameID, gameState) VALUES(?,?)'
+            db.run(sql, [state.gameId, JSON.stringify(state.gameState)], err => {
+                if (err) reject(err)
+                resolve(true)
+            })
+        })
+    }
+    save(newState: GameState): Promise<boolean> {
+        const db = this.database!
+        return new Promise<boolean>((resolve, reject) => {
+            this.stateExists(newState.gameId).then(stateExists => {
+                if (!stateExists) {
+                    this.insertState(newState).then(success => {
+                        resolve(success)
+                    })
+                } else {
+                    const sql = 'UPDATE game SET state = ? WHERE gameID = ?'
+                    db.run(sql, [JSON.stringify(newState.gameState), newState.gameId], err => {
+                        if (err) reject(err)
+                        resolve(true)
+                    })
+                }
+            })
+        })
+    }
+    load(gameId: string): Promise<GameState | undefined> {
+        return new Promise<GameState | undefined>((resolve, reject) => {
+            const db = this.database!
+            const sql = 'SELECT * FROM game WHERE gameID LIKE ?'
+            db.get(sql, [gameId], (err, row) => {
+                if (err) reject(err)
+                if (row) {
+                    const typedRow = row as GameDBRow
+                    const gameState: GameState = {
+                        gameId: typedRow.gameID,
+                        gameState: JSON.parse(typedRow.gameState),
+                    }
+                    resolve(gameState)
+                } else {
+                    resolve(undefined)
+                }
+            })
+        })
+    }
     static getInstance() {
         if (!MyGameDB.instance) {
             MyGameDB.instance = new MyGameDB()
