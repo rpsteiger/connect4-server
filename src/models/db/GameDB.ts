@@ -18,7 +18,7 @@ export const myErrors = {
 type GameDBRow = { gameID: string; gameState: string }
 
 export class MyGameDB implements GameDB {
-    static instance: GameDB
+    static instance: MyGameDB
     private database: Database | undefined
 
     private constructor() {}
@@ -104,7 +104,7 @@ export class MyGameDB implements GameDB {
                         resolve(success)
                     })
                 } else {
-                    const sql = 'UPDATE game SET state = ? WHERE gameID = ?'
+                    const sql = 'UPDATE game SET gameState = ? WHERE gameID = ?'
                     db.run(sql, [newState.toJSON(), newState.gameId], err => {
                         if (err) reject(err)
                         resolve(true)

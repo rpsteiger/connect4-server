@@ -9,6 +9,7 @@ export const myConsts = {
 export const MyGameStateErrors = {
     INVALID_COLUMN: 'column y has to satisfy: 0 >= y < board width',
     IMPERMISSIBLE_MOVE: 'wait for your turn',
+    COLUMN_IS_FULL: 'cannot put piece here, column is full!',
 }
 
 export type Color = 'X' | 'O'
@@ -19,7 +20,7 @@ export interface GameState {
     nextMove: Color
     toJSON(): string
     fromJSON(json: string): GameState
-    move(column: number, mover: Color, gameState: GameState): GameState
+    move(column: number, mover: Color): GameState
 }
 
 const createEmptyBoard: () => string[][] = () => {
@@ -52,19 +53,30 @@ export class MyGameState implements GameState {
         const lastPieceInColumn = clickedColumn.findIndex(x => x !== '')
         const colPosition = lastPieceInColumn === -1 ? 5 : lastPieceInColumn - 1
 
-        const newState = new MyGameState()
+        if (colPosition < 0) {
+            throw new Error(MyGameStateErrors.COLUMN_IS_FULL)
+        }
+
+        const newState = this.clone()
         newState.board[colPosition][column] = this.nextMove
         newState.toggleMover()
         return newState
     }
+    clone() {
+        return new MyGameState({
+            gameId: this.gameId,
+            board: [...this.board],
+            nextMove: this.nextMove,
+        } as GameState)
+    }
     toggleMover() {
-        this.nextMove = this.nextMove === 'O' ? 'X' : 'X'
+        this.nextMove = this.nextMove === 'O' ? 'X' : 'O'
     }
     toJSON(): string {
         return JSON.stringify({ ...this })
     }
     fromJSON(json: string): GameState {
         const gs: GameState = JSON.parse(json)
-        return gs
+        return new MyGameState(gs)
     }
 }

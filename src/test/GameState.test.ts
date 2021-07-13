@@ -34,24 +34,41 @@ describe('MyGameState class', () => {
         it("should throw an error on move(-1, 'X', ...)", () => {
             expect(() => {
                 const gs = getClassUnderTest()
-                const gs2 = gs.move(-1, 'O', gs)
+                const gs2 = gs.move(-1, 'O')
             }).to.throw(MyGameStateErrors.INVALID_COLUMN)
         })
         it('should not allow the wrong player to move', () => {
             const gs = getClassUnderTest()
             const impermissibleMover = gs.nextMove === 'O' ? 'X' : 'O'
             expect(() => {
-                gs.move(2, impermissibleMover, gs)
+                gs.move(2, impermissibleMover)
             }).to.throw(MyGameStateErrors.IMPERMISSIBLE_MOVE)
         })
         it('should work with correct params', () => {
             const gs = getClassUnderTest()
             const mover = gs.nextMove
-            const gs2 = gs.move(2, mover, gs)
+            const gs2 = gs.move(2, mover)
             expect(gs2.nextMove).not.to.eql(mover)
             const moveCell = gs2.board[myConsts.BOARD_HEIGHT - 1][2]
             expect(moveCell).to.not.eql('')
             expect(moveCell).to.eql(mover)
+        })
+        it('should throw  an error if collumn is full', () => {
+            // prettier-ignore
+            const board = 
+               [['', '', 'X', '','', '', ''],
+                ['', '', 'O', '', '', '', ''],
+                ['', '', 'X', '', '', '', ''],
+                ['', '', 'O', '','', '', ''],
+                ['', '', 'X', '','', '', ''],
+                ['', '', 'O', '','', '', '']
+              ]
+            const gs = getClassUnderTest()
+            gs.board = board
+            gs.nextMove = 'O'
+            expect(() => {
+                gs.move(2, 'O')
+            }).to.throw(MyGameStateErrors.COLUMN_IS_FULL)
         })
     })
 })
